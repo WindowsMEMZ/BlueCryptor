@@ -17,13 +17,13 @@
 
 import Foundation
 
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+#if !os(Linux)
 	import CommonCrypto
-#elseif os(Linux)
+#else
 	import OpenSSL
 #endif
 
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+#if !os(Linux)
 ///
 /// Links the native CommonCryptoStatus enumeration to Swift versions.
 ///
@@ -129,7 +129,7 @@ public enum Status: CCCryptorStatus, Swift.Error, CustomStringConvertible {
     }
 }
 	
-#elseif os(Linux)
+#else
 	
 ///
 /// Error status

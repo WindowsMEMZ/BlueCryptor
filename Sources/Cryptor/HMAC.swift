@@ -17,9 +17,9 @@
 
 import Foundation
 
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+#if !os(Linux)
 	import CommonCrypto
-#elseif os(Linux)
+#else
 	import OpenSSL
 #endif
 
@@ -51,7 +51,7 @@ public class HMAC: Updatable {
         /// Secure Hash Algorithm 2 512-bit
 		case sha512
         
-		#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+		#if !os(Linux)
 		
 			static let fromNative: [CCHmacAlgorithm: Algorithm] = [
                 CCHmacAlgorithm(kCCHmacAlgSHA1): .sha1,
@@ -86,7 +86,7 @@ public class HMAC: Updatable {
 				}
 			}
 		
-		#elseif os(Linux)
+		#else
 		
 			func nativeValue() -> OpaquePointer? {
 	
@@ -114,7 +114,7 @@ public class HMAC: Updatable {
         ///
         public func digestLength() -> Int {
 			
-			#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+			#if !os(Linux)
 				
 				switch self {
 					
@@ -132,7 +132,7 @@ public class HMAC: Updatable {
 					return Int(CC_SHA512_DIGEST_LENGTH)
 				}
 				
-			#elseif os(Linux)
+			#else
 				
 				switch self {
 					
@@ -156,11 +156,11 @@ public class HMAC: Updatable {
     }
 	
 	/// Context
-	#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+	#if !os(Linux)
 	
     	typealias Context = UnsafeMutablePointer<CCHmacContext>
 	
-	#elseif os(Linux)
+	#else
 	
 		typealias Context = OpaquePointer?
 	
@@ -189,9 +189,9 @@ public class HMAC: Updatable {
 	init(using algorithm: Algorithm, keyBuffer: UnsafeRawPointer, keyByteCount: Int) {
 		
         self.algorithm = algorithm
-		#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+		#if !os(Linux)
 	        CCHmacInit(context, algorithm.nativeValue(), keyBuffer, size_t(keyByteCount))
-		#elseif os(Linux)
+		#else
 			HMAC_Init_wrapper(context, keyBuffer, Int32(keyByteCount), .make(optional: algorithm.nativeValue()))
 		#endif
     }
@@ -207,21 +207,21 @@ public class HMAC: Updatable {
 		
 		self.algorithm = algorithm
 		#if swift(>=5.0)
-			#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+			#if !os(Linux)
 				key.withUnsafeBytes() {
 					CCHmacInit(context, algorithm.nativeValue(), $0.baseAddress, size_t(key.count))
 				}
-				#elseif os(Linux)
+				#else
 				_ = key.withUnsafeBytes() {
 					HMAC_Init_wrapper(context, $0.baseAddress, Int32(key.count), .make(optional: algorithm.nativeValue()))
 				}
 			#endif
 		#else
-			#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+			#if !os(Linux)
 				key.withUnsafeBytes() { (buffer: UnsafePointer<UInt8>) in
 					CCHmacInit(context, algorithm.nativeValue(), buffer, size_t(key.count))
 				}
-			#elseif os(Linux)
+			#else
 				_ = key.withUnsafeBytes() { (buffer: UnsafePointer<UInt8>) in
 					HMAC_Init_wrapper(context, buffer, Int32(key.count), .make(optional: algorithm.nativeValue()))
 				}
@@ -239,9 +239,9 @@ public class HMAC: Updatable {
 	public init(using algorithm: Algorithm, key: NSData) {
 		
         self.algorithm = algorithm
-		#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+		#if !os(Linux)
         	CCHmacInit(context, algorithm.nativeValue(), key.bytes, size_t(key.length))
-		#elseif os(Linux)
+		#else
 			HMAC_Init_wrapper(context, key.bytes, Int32(key.length), .make(optional: algorithm.nativeValue()))
 		#endif
     }
@@ -256,9 +256,9 @@ public class HMAC: Updatable {
 	public init(using algorithm: Algorithm, key: [UInt8]) {
 		
         self.algorithm = algorithm
-		#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+		#if !os(Linux)
         	CCHmacInit(context, algorithm.nativeValue(), key, size_t(key.count))
-		#elseif os(Linux)
+		#else
 			HMAC_Init_wrapper(context, key, Int32(key.count), .make(optional: algorithm.nativeValue()))
 		#endif
     }
@@ -274,9 +274,9 @@ public class HMAC: Updatable {
 	public init(using algorithm: Algorithm, key: String) {
 		
         self.algorithm = algorithm
-		#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+		#if !os(Linux)
         	CCHmacInit(context, algorithm.nativeValue(), key, size_t(key.lengthOfBytes(using: String.Encoding.utf8)))
-		#elseif os(Linux)
+		#else
 			HMAC_Init_wrapper(context, key, Int32(key.utf8.count), .make(optional: algorithm.nativeValue()))
 		#endif
     }
@@ -307,9 +307,9 @@ public class HMAC: Updatable {
     ///
 	public func update(from buffer: UnsafeRawPointer, byteCount: size_t) -> Self? {
 		
-		#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+		#if !os(Linux)
 	        CCHmacUpdate(context, buffer, byteCount)
-		#elseif os(Linux)
+		#else
 			HMAC_Update(context, buffer.assumingMemoryBound(to: UInt8.self), byteCount)
 		#endif
         return self
@@ -323,9 +323,9 @@ public class HMAC: Updatable {
 	public func final() -> [UInt8] {
 		
 		var hmac = Array<UInt8>(repeating: 0, count:algorithm.digestLength())
-		#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+		#if !os(Linux)
         	CCHmacFinal(context, &hmac)
-		#elseif os(Linux)
+		#else
 			var length: UInt32 = 0
 			HMAC_Final(context, &hmac, &length)
 		#endif
